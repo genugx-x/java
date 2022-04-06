@@ -1,4 +1,4 @@
-package com.genug.java.basic;
+package com.genug.java.basic.data;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.DisplayName;
@@ -12,7 +12,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DataTest {
 
@@ -85,5 +89,51 @@ public class DataTest {
             if (fileChannel != null && fileChannel.isOpen())
                 fileChannel.close();
         }
+    }
+
+    private final DataService dataService = new DataService();
+
+    @Test
+    @DisplayName("3. StringBuilder 사용해서 Buffer에 따라 유동적으로 들어오는 문자열에서 일정 문자열 구간 찾기 테스트")
+    void test_4() throws IOException {
+        Data data = new Data(new StringBuilder(),
+                new LinkedList<>());
+        FileChannel fileChannel = null;
+        try {
+            Path path = Paths.get("./files/string_builder_use_test.log");
+            fileChannel = FileChannel.open(path, StandardOpenOption.READ);
+            ByteBuffer buffer = ByteBuffer.allocate(50);
+            StringBuilder sb = data.getStringBuilder();
+            int byteCount = 0;
+            while (true) {
+                buffer.clear();
+                byteCount = fileChannel.read(buffer);
+                if (byteCount == -1) {
+                    break;
+                }
+                buffer.flip();
+                String contents = StandardCharsets.UTF_8.decode(buffer).toString();
+                sb.append(contents);
+                dataService.connectString(data);
+            }
+            System.out.println("결과 확인");
+            while (!data.getDataIntervals().isEmpty()) {
+                Queue<String> dataInterval = data.getDataIntervals().poll();
+                System.out.println("------------------------------------");
+                for (String interval : dataInterval) {
+                    System.out.println(interval);
+                }
+//                while (!dataInterval.poll().isEmpty()) {
+//                    String interval = dataInterval.poll();
+//                    System.out.println(interval);
+//                }
+            }
+        } catch(IOException e){
+            e.printStackTrace();
+        } finally {
+            if (fileChannel != null && fileChannel.isOpen())
+                fileChannel.close();
+        }
+
     }
 }
